@@ -16,17 +16,18 @@ from sklearn.dummy import DummyClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix, f1_score, roc_curve
 
-df = pd.read_csv("properties-decorated.csv")
+df = pd.read_csv("ml-dataset.csv")
 print(df.head())
 y = df.iloc[:,1]
+income = df.iloc[:,2]
 beds = df.iloc[:,3]
 baths = df.iloc[:,4]
 area = df.iloc[:,5]
-type = df.iloc[:,6]
+p_type = df.iloc[:,6]
 
 # Peform one-hot encoding on property types
 lab_enc = LabelEncoder()
-type_int = lab_enc.fit_transform(type)
+type_int = lab_enc.fit_transform(p_type)
 type_int = type_int.reshape(len(type_int), 1)
 # Uncomment for house types
 # print(list(lab_enc.classes_))
@@ -34,11 +35,13 @@ type_int = type_int.reshape(len(type_int), 1)
 oh_enc = OneHotEncoder(sparse=False)
 type_enc = oh_enc.fit_transform(type_int)
 
-X = np.column_stack(beds, baths, area, type_enc)
-print(X.head())
-# # Split training and test data
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-# y_train = y_train.to_numpy()
+X = np.vstack((income, beds, baths, area))
+X = np.transpose(X)
+X = np.hstack((X,type_enc))
+
+# Split training and test data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+y_train = y_train.to_numpy()
 
 # # Legend information for logistic regression model
 # legend_markers = [
@@ -86,32 +89,29 @@ print(X.head())
 # plt.title('L2 LR - Polynomial Cross Val')
 # plt.show()
 
-# # C value cross validation
-# mean_error=[]; std_error=[]
-# # Get feature transforms
-# poly = PolynomialFeatures(2)
-# Xp = poly.fit_transform(X)
-# # C values to validate
-# CL_range = [0.1, 0.5, 1, 5, 10, 15, 25, 50, 100]
-# # Loop for each value
-# for Ci in CL_range:
-#     model = linear_model.LogisticRegression(penalty='l2', C=Ci)
-#     temp=[]
-#     kf = KFold(n_splits=5)
-#     # Divide data into train and test
-#     for train, test in kf.split(Xp):
-#         model.fit(Xp[train], y[train])
-#         ypred = model.predict(Xp[test])
-#         temp.append(f1_score(y[test], ypred, average='micro'))
-#     # Calculate errors
-#     mean_error.append(np.array(temp).mean())
-#     std_error.append(np.array(temp).std())
-# # Plot mean square error vs C value
-# plt.errorbar(CL_range,mean_error,yerr=std_error)
-# plt.xlabel('Ci'); plt.ylabel('F1 Score')
-# plt.xlim((0,100))
-# plt.title('L2 Regression - C Cross Validation')
-# plt.show()
+# C value cross validation
+mean_error=[]; std_error=[]
+# C values to validate
+CL_range = [0.1, 0.5, 1, 5, 10, 15, 25, 50, 100]
+# Loop for each value
+for Ci in CL_range:
+    model = linear_model.LogisticRegression(penalty='l2', C=Ci, max_iter=10000)
+    temp=[]
+    kf = KFold(n_splits=5)
+    # Divide data into train and test
+    for train, test in kf.split(X):
+        model.fit(X[train], y[train])
+        ypred = model.predict(X[test])
+        temp.append(f1_score(y[test], ypred, average='micro'))
+    # Calculate errors
+    mean_error.append(np.array(temp).mean())
+    std_error.append(np.array(temp).std())
+# Plot mean square error vs C value
+plt.errorbar(CL_range,mean_error,yerr=std_error)
+plt.xlabel('Ci'); plt.ylabel('F1 Score')
+plt.xlim((0,100))
+plt.title('L2 Regression - C Cross Validation')
+plt.show()
 
 # # Cross validation - KNN k
 # mean_error=[]; std_error=[]
