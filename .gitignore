@@ -130,3 +130,9 @@ dmypy.json
 
 # VS Code
 .vscode/
+
+# Secrets
+secrets.json
+
+# geojson
+Electoral_Divisions_-_OSi_National_Statutory_Boundaries.geojson
