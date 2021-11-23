@@ -35,26 +35,26 @@ type_int = type_int.reshape(len(type_int), 1)
 oh_enc = OneHotEncoder(sparse=False)
 type_enc = oh_enc.fit_transform(type_int)
 
-scaler = StandardScaler()
-income = (income-income.min())/(income.max()-income.min())
-area = (area-area.min())/(area.max()-area.min())
-beds = (beds-beds.min())/(beds.max()-beds.min())
-baths = (baths-baths.min())/(baths.max()-beds.min())
+# scaler = StandardScaler()
+# income = (income-income.min())/(income.max()-income.min())
+# area = (area-area.min())/(area.max()-area.min())
+# beds = (beds-beds.min())/(beds.max()-beds.min())
+# baths = (baths-baths.min())/(baths.max()-beds.min())
 
 X = np.vstack((income, beds, baths, area))
 X = np.transpose(X)
-X = scaler.fit_transform(X)
+# X = scaler.fit_transform(X)
+
+
+X = np.hstack((X,type_enc))
 print(X)
-
-# X = np.hstack((X,type_enc))
-
 # Split training and test data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # C value cross validation
 mean_error=[]; std_error=[]
 # C values to validate
-CL_range = [0.0001,0.001,0.01,0.1, 0.5, 1]# Loop for each value
+CL_range = [0.0001,0.001,0.01,0.1]# Loop for each value
 for Ci in CL_range:
     model = linear_model.LinearRegression()
     temp=[]
@@ -69,16 +69,16 @@ for Ci in CL_range:
 # Plot mean square error vs C value
 plt.errorbar(CL_range,mean_error,yerr=std_error)
 plt.xlabel('Ci'); plt.ylabel('MSE')
-plt.xlim((0,1))
+plt.xlim((0,0.1))
 plt.title('Linear Regression - C Cross Validation')
 plt.show()
 
 # C value cross validation
 mean_error=[]; std_error=[]
 # C values to validate
-CL_range = [0.0001,0.001,0.01,0.1, 0.5, 1]# Loop for each value
+CL_range = [0.0001,0.001,0.01,0.1]# Loop for each value
 for Ci in CL_range:
-    model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=1000)
+    model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=10000)
     temp=[]
     kf = KFold(n_splits=5)
     # Divide data into train and test
@@ -91,14 +91,14 @@ for Ci in CL_range:
 # Plot mean square error vs C value
 plt.errorbar(CL_range,mean_error,yerr=std_error)
 plt.xlabel('Ci'); plt.ylabel('MSE')
-plt.xlim((0,1))
+plt.xlim((0,0.1))
 plt.title('Lasso Regression - C Cross Validation')
 plt.show()
 
 # C value cross validation
 mean_error=[]; std_error=[]
 # C values to validate
-CL_range = [0.0001,0.001,0.01,0.1, 0.5, 1]# Loop for each value
+CL_range = [0.0001,0.001,0.01,0.1]# Loop for each value
 for Ci in CL_range:
     model = linear_model.Ridge(alpha=1/(2*Ci), max_iter=1000)
     temp=[]
@@ -114,7 +114,7 @@ for Ci in CL_range:
 # Plot mean square error vs C value
 plt.errorbar(CL_range,mean_error,yerr=std_error)
 plt.xlabel('Ci'); plt.ylabel('MSE')
-plt.xlim((0,1))
+plt.xlim((0,0.1))
 plt.title('Ridge Regression - C Cross Validation')
 plt.show()
 
