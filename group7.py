@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 from sklearn import linear_model
-from sklearn.preprocessing import PolynomialFeatures, OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import PolynomialFeatures, OneHotEncoder, LabelEncoder, MinMaxScaler, RobustScaler, StandardScaler
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.dummy import DummyClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix, f1_score, roc_curve
+from sklearn.metrics import confusion_matrix, f1_score, roc_curve, mean_squared_error
 
 df = pd.read_csv("ml-dataset.csv")
 print(df.head())
@@ -35,13 +35,21 @@ type_int = type_int.reshape(len(type_int), 1)
 oh_enc = OneHotEncoder(sparse=False)
 type_enc = oh_enc.fit_transform(type_int)
 
+scaler = StandardScaler()
+income = (income-income.min())/(income.max()-income.min())
+area = (area-area.min())/(area.max()-area.min())
+beds = (beds-beds.min())/(beds.max()-beds.min())
+baths = (baths-baths.min())/(baths.max()-beds.min())
+
 X = np.vstack((income, beds, baths, area))
 X = np.transpose(X)
-X = np.hstack((X,type_enc))
+X = scaler.fit_transform(X)
+print(X)
+
+# X = np.hstack((X,type_enc))
 
 # Split training and test data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-y_train = y_train.to_numpy()
 
 # # Legend information for logistic regression model
 # legend_markers = [
@@ -92,24 +100,45 @@ y_train = y_train.to_numpy()
 # C value cross validation
 mean_error=[]; std_error=[]
 # C values to validate
-CL_range = [0.1, 0.5, 1, 5, 10, 15, 25, 50, 100]
-# Loop for each value
+CL_range = [0.0001,0.001,0.01,0.1, 0.5, 1, 5]# Loop for each value
 for Ci in CL_range:
-    model = linear_model.LogisticRegression(penalty='l2', C=Ci, max_iter=10000)
+    model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=1000)
     temp=[]
     kf = KFold(n_splits=5)
     # Divide data into train and test
     for train, test in kf.split(X):
         model.fit(X[train], y[train])
         ypred = model.predict(X[test])
-        temp.append(f1_score(y[test], ypred, average='micro'))
+        temp.append(mean_squared_error(y[test],ypred))    # Calculate errors
+    mean_error.append(np.array(temp).mean())
+    std_error.append(np.array(temp).std())
+# Plot mean square error vs C value
+plt.errorbar(CL_range,mean_error,yerr=std_error)
+plt.xlabel('Ci'); plt.ylabel('F1 Score')
+plt.xlim((0,5))
+plt.title('L2 Regression - C Cross Validation')
+plt.show()
+
+# C value cross validation
+mean_error=[]; std_error=[]
+# C values to validate
+CL_range = [0.0001,0.001,0.01,0.1, 0.5, 1, 5]# Loop for each value
+for Ci in CL_range:
+    model = linear_model.Ridge(alpha=1/(2*Ci), max_iter=1000)
+    temp=[]
+    kf = KFold(n_splits=5)
+    # Divide data into train and test
+    for train, test in kf.split(X):
+        model.fit(X[train], y[train])
+        ypred = model.predict(X[test])
+        temp.append(mean_squared_error(y[test],ypred))
     # Calculate errors
     mean_error.append(np.array(temp).mean())
     std_error.append(np.array(temp).std())
 # Plot mean square error vs C value
 plt.errorbar(CL_range,mean_error,yerr=std_error)
 plt.xlabel('Ci'); plt.ylabel('F1 Score')
-plt.xlim((0,100))
+plt.xlim((0,5))
 plt.title('L2 Regression - C Cross Validation')
 plt.show()
 
