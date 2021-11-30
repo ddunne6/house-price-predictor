@@ -18,6 +18,9 @@ from sklearn.dummy import DummyClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import confusion_matrix, f1_score, roc_curve, mean_squared_error, r2_score
 
+LASSO_C_VALUE = 0.01
+RIDGE_C_VALUE = 10
+K_VALUE = 4 # 7 also good
 
 def main(dataset):
     df = pd.read_csv(dataset)
@@ -29,7 +32,7 @@ def main(dataset):
     area = df.iloc[:, 5]
     p_type = df.iloc[:, 6]
 
-    #y = normalise(y)
+    # Good for Lasso Regression Convergence, don't think normalisation needed for others
     income = normalise(income)
     beds = normalise(beds)
     baths = normalise(baths)
@@ -55,8 +58,13 @@ def main(dataset):
     X = np.transpose(X)
     # X = scaler.fit_transform(X)
 
-    X = np.hstack((X, type_enc))
+    X = np.hstack((X, type_enc)) # When excluded, tends to give a better R2 score
     print(X)
+
+    # poly = PolynomialFeatures(2)
+    # X = poly.fit_transform(X)
+
+
     # Split training and test data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
@@ -157,43 +165,28 @@ def main(dataset):
     # Linear Regression
     linear_mod = linear_model.LinearRegression()
     linear_mod.fit(X_train, y_train)
-    linear_ypred = linear_mod.predict(X_test)
-    linear_MSE = mean_squared_error(y_test, linear_ypred)
-    linear_R2 = r2_score(y_test, linear_ypred)
-    print("Linear - MSE = ", linear_MSE, ", R2 = ", linear_R2)
+    print_evaluation(linear_mod, "Linear Regression", X_train, X_test, y_train, y_test)
 
     # Lasso Regression
-    lasso_model = linear_model.Lasso(alpha=1/(2*0.01), max_iter=10000)
+    lasso_model = linear_model.Lasso(alpha=1/(2*LASSO_C_VALUE), max_iter=10000)
     lasso_model.fit(X_train, y_train)
-    lasso_ypred = lasso_model.predict(X_test)
-    lasso_MSE = mean_squared_error(y_test, lasso_ypred)
-    lasso_R2 = r2_score(y_test, lasso_ypred)
-    print("Lasso - MSE = ", lasso_MSE, ", R2 = ", lasso_R2)
+    print_evaluation(lasso_model, "Lasso Regression", X_train, X_test, y_train, y_test)
 
     # Ridge Regression
-    ridge_model = linear_model.Ridge(alpha=1/(2*10), max_iter=1000)
+    ridge_model = linear_model.Ridge(alpha=1/(2*RIDGE_C_VALUE), max_iter=10000)
     ridge_model.fit(X_train, y_train)
-    ridge_ypred = ridge_model.predict(X_test)
-    ridge_MSE = mean_squared_error(y_test, ridge_ypred)
-    ridge_R2 = r2_score(y_test, ridge_ypred)
-    print("Ridge - MSE = ", ridge_MSE, ", R2 = ", ridge_R2)
+    print_evaluation(ridge_model, "Ridge Regression", X_train, X_test, y_train, y_test)
 
     # kNN Regression
-    kNN_model = KNeighborsRegressor(n_neighbors=4, weights='uniform')
+    kNN_model = KNeighborsRegressor(n_neighbors=K_VALUE, weights='uniform')
     kNN_model.fit(X_train, y_train)
-    kNN_ypred = kNN_model.predict(X_test)
-    kNN_MSE_train = mean_squared_error(y_train, kNN_model.predict(X_train))
-    kNN_R2_train = r2_score(y_train, kNN_model.predict(X_train))
-    kNN_MSE_test = mean_squared_error(y_test, kNN_ypred)
-    kNN_R2_test = r2_score(y_test, kNN_ypred)
-    print(f"Training >> kNN - MSE = {kNN_MSE_train}, R2 = {kNN_R2_train}")
-    print(f"Test >> kNN - MSE = {kNN_MSE_test}, R2 = {kNN_R2_test}")
+    print_evaluation(kNN_model, "KNN", X_train, X_test, y_train, y_test)
 
     # Baseline - Predicts the average value
     base_ypred = [y_train.mean()] * len(y_test)
     base_MSE = mean_squared_error(y_test, base_ypred)
     base_R2 = r2_score(y_test, base_ypred)
-    print("Base - MSE = ", base_MSE, ", R2 = ", base_R2)
+    print(f"Base Model Test >> MSE = {round(base_MSE, 4)}, R2 = {round(base_R2, 4)}")
 
     X_train2 = zip(*X_train)
     X_train2 = list(X_train2)
@@ -201,19 +194,31 @@ def main(dataset):
     X_test2 = zip(*X_test)
     X_test2 = list(X_test2)
 
+    # TODO not sure on this plot?
     # Plot predictions
     # 0 for income, 1 for besds, 2 for baths, 3 for area
     input = 1
     plt.rc('font', size=18)
     plt.rcParams['figure.constrained_layout.use'] = True
-    plt.scatter(X_train2[input], y_train, color='green', marker='+')
-    plt.scatter(X_test2[input], linear_ypred, color='red', marker='x')
-    plt.scatter(X_test2[input], lasso_ypred, color='yellow', marker='o')
-    plt.scatter(X_test2[input], ridge_ypred, color='black', marker='*')
-    plt.scatter(X_test2[input], kNN_ypred, color='blue', marker='D')
+    plt.scatter(X_train2[input], y_train, color='green', marker='+', label="Training data")
+    plt.scatter(X_test2[input], linear_mod.predict(X_test), color='red', marker='x', label="Linear Model")
+    plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
+    plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
+    plt.scatter(X_test2[input], kNN_model.predict(X_test), color='blue', marker='D', label="KNN model")
+    plt.legend()
     plt.xlabel("Average Income")
     plt.ylabel("House Price")
     plt.show()
+
+def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
+    y_pred_test = model.predict(X_test)
+    y_pred_train = model.predict(X_train)
+    MSE_train = mean_squared_error(y_train, y_pred_train)
+    R2_train = r2_score(y_train, y_pred_train)
+    MSE_test = mean_squared_error(y_test, y_pred_test)
+    R2_test = r2_score(y_test, y_pred_test)
+    print(f"{model_type} Train >> MSE = {round(MSE_train, 4)}, R2 = {round(R2_train, 4)}")
+    print(f"{model_type} Test  >> MSE = {round(MSE_test, 4)}, R2 = {round(R2_test, 4)}")
 
 
 def normalise(data_array: np.array) -> np.array:

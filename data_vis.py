@@ -43,7 +43,7 @@ def main(dataset):
     plt.ylabel('House Price (€)')
     plt.legend()
     plt.xlim(0, 16)
-    plt.title(f"Number of beds/baths Vs Price of House")
+    plt.title(f"Number of Units Vs Price of House")
     plt.show()
 
 
