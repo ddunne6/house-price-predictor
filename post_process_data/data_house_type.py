@@ -27,7 +27,7 @@ def main(data):
 
         if property in house:
             df.iloc[i, 6] = 'House'
-        if property in apartment:
+        elif property in apartment:
             df.iloc[i, 6] = 'Apartment'
 
     print(df)
