@@ -31,7 +31,7 @@ def main(data):
             df.iloc[i, 6] = 'Apartment'
 
     print(df)
-    df.to_csv('categrised-ml-dataset.csv')
+    df.to_csv('categorised-ml-dataset.csv')
 
 if __name__ == "__main__":
     main('ml-dataset.csv')
