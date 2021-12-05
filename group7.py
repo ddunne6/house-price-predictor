@@ -5,34 +5,49 @@
 
 # Imports
 import numpy as np
-from numpy.lib.utils import deprecate
-from numpy.linalg import norm
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
 from sklearn import linear_model
-from sklearn.preprocessing import PolynomialFeatures, OneHotEncoder, LabelEncoder, MinMaxScaler, RobustScaler, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.model_selection import KFold, train_test_split
-from sklearn.dummy import DummyClassifier
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.metrics import confusion_matrix, f1_score, roc_curve, mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 
+# Hyperparameters
 LASSO_C_VALUE = 0.01
-RIDGE_C_VALUE = 10
-K_VALUE = 4 # 7 also good
+RIDGE_C_VALUE = 100
+K_VALUE = 8
 
 def main(dataset):
+    # Read in the dataset
     df = pd.read_csv(dataset)
     print(df.head())
-    y = df.iloc[:, 1]
-    income = df.iloc[:, 2]
-    beds = df.iloc[:, 3]
-    baths = df.iloc[:, 4]
-    area = df.iloc[:, 5]
-    p_type = df.iloc[:, 6]
+    y = df.iloc[:, 1].to_numpy()
+    income = df.iloc[:, 2].to_numpy()
+    beds = df.iloc[:, 3].to_numpy()
+    baths = df.iloc[:, 4].to_numpy()
+    area = df.iloc[:, 5].to_numpy()
+    p_type = df.iloc[:, 6].to_numpy()
+    
+    # Remove listings that include land using a mask
+    yhat = np.empty(len(area), dtype=object)
+    ylist = []
+    for i in range(len(area)):
+        if area[i] >= 1000 :
+            yhat[i] = -1
+            ylist.append(i)
+        else:
+            yhat[i] = 1
+    mask = yhat != -1
 
-    # Good for Lasso Regression Convergence, don't think normalisation needed for others
+    income = income[mask]
+    beds = beds[mask]
+    baths = baths[mask]
+    area = area[mask]
+    p_type = p_type[mask]
+    y = y[mask]
+
+    # Normalise input features between 0 and 1
     income = normalise(income)
     beds = normalise(beds)
     baths = normalise(baths)
@@ -42,56 +57,28 @@ def main(dataset):
     lab_enc = LabelEncoder()
     type_int = lab_enc.fit_transform(p_type)
     type_int = type_int.reshape(len(type_int), 1)
-    # Uncomment for house types
-    # print(list(lab_enc.classes_))
-    # print(type_int)
     oh_enc = OneHotEncoder(sparse=False)
     type_enc = oh_enc.fit_transform(type_int)
 
-    # scaler = StandardScaler()
-    # income = (income-income.min())/(income.max()-income.min())
-    # area = (area-area.min())/(area.max()-area.min())
-    # beds = (beds-beds.min())/(beds.max()-beds.min())
-    # baths = (baths-baths.min())/(baths.max()-beds.min())
-
+    # Combine features to one input
     X = np.vstack((income, beds, baths, area))
     X = np.transpose(X)
-    # X = scaler.fit_transform(X)
+    X = np.hstack((X, type_enc))
 
-    X = np.hstack((X, type_enc)) # When excluded, tends to give a better R2 score
-    print(X)
-
-    # poly = PolynomialFeatures(2)
-    # X = poly.fit_transform(X)
-
-
-    # Split training and test data
+    # Split training and test data with 80:20 split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
 
-    # Linear Regression only use cross val for mean squared error and std_error, doesn't use C
-    # C value cross validation
-    mean_error = []
-    std_error = []
-    model = linear_model.LinearRegression()
-    temp = []
-    kf = KFold(n_splits=5)
-    # Divide data into train and test
-    for train, test in kf.split(X):
-        model.fit(X[train], y[train])
-        ypred = model.predict(X[test])
-        # Calculate errors
-        temp.append(mean_squared_error(y[test], ypred))
-    mean_error.append(np.array(temp).mean())
-    std_error.append(np.array(temp).std())
+    # Cross-Validation
+    # No cross-validation for linear model - no C value to tune
 
-    # C value cross validation
+    # Lasso regression C cross-validation
     mean_error = []
     std_error = []
     # C values to validate
-    CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]  # Loop for each value
+    CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
     for Ci in CL_range:
-        model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=10000)
+        model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=100000)
         temp = []
         kf = KFold(n_splits=5)
         # Divide data into train and test
@@ -102,7 +89,7 @@ def main(dataset):
             temp.append(mean_squared_error(y[test], ypred))
         mean_error.append(np.array(temp).mean())
         std_error.append(np.array(temp).std())
-    # Plot mean square error vs C value
+    # Plot MSE vs C value
     plt.errorbar(CL_range, mean_error, yerr=std_error)
     plt.xlabel('Ci')
     plt.ylabel('MSE')
@@ -110,13 +97,13 @@ def main(dataset):
     plt.xscale("log")
     plt.show()
 
-    # C value cross validation
+    # Ridge regression C cross-validation
     mean_error = []
     std_error = []
     # C values to validate
-    CL_range = [0.1, 1, 10, 100, 1000]  # Loop for each value
+    CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]
     for Ci in CL_range:
-        model = linear_model.Ridge(alpha=1/(2*Ci), max_iter=1000)
+        model = linear_model.Ridge(alpha=1/(2*Ci), max_iter=10000)
         temp = []
         kf = KFold(n_splits=5)
         # Divide data into train and test
@@ -127,7 +114,7 @@ def main(dataset):
         # Calculate errors
         mean_error.append(np.array(temp).mean())
         std_error.append(np.array(temp).std())
-    # Plot mean square error vs C value
+    # Plot MSE vs C value
     plt.errorbar(CL_range, mean_error, yerr=std_error)
     plt.xlabel('Ci')
     plt.ylabel('MSE')
@@ -135,12 +122,11 @@ def main(dataset):
     plt.xscale("log")
     plt.show()
 
-    # Cross validation - KNN k
+    # kNN k cross-validation
     mean_error = []
     std_error = []
-    # C values to validate
+    # k values to validate
     K_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    # Loop for each k
     for Ki in K_range:
         model = KNeighborsRegressor(n_neighbors=Ki, weights='uniform')
         temp = []
@@ -153,7 +139,7 @@ def main(dataset):
         # Calculate errors
         mean_error.append(np.array(temp).mean())
         std_error.append(np.array(temp).std())
-    # Plot mean square error vs C value
+    # Plot MSE vs k value
     plt.errorbar(K_range, mean_error, yerr=std_error)
     plt.xlabel('Ki')
     plt.ylabel('MSE')
@@ -166,16 +152,19 @@ def main(dataset):
     linear_mod = linear_model.LinearRegression()
     linear_mod.fit(X_train, y_train)
     print_evaluation(linear_mod, "Linear Regression", X_train, X_test, y_train, y_test)
+    #print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
 
     # Lasso Regression
     lasso_model = linear_model.Lasso(alpha=1/(2*LASSO_C_VALUE), max_iter=10000)
     lasso_model.fit(X_train, y_train)
     print_evaluation(lasso_model, "Lasso Regression", X_train, X_test, y_train, y_test)
+    #print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
 
     # Ridge Regression
     ridge_model = linear_model.Ridge(alpha=1/(2*RIDGE_C_VALUE), max_iter=10000)
     ridge_model.fit(X_train, y_train)
     print_evaluation(ridge_model, "Ridge Regression", X_train, X_test, y_train, y_test)
+    #print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
 
     # kNN Regression
     kNN_model = KNeighborsRegressor(n_neighbors=K_VALUE, weights='uniform')
@@ -183,18 +172,22 @@ def main(dataset):
     print_evaluation(kNN_model, "KNN", X_train, X_test, y_train, y_test)
 
     # Baseline - Predicts the average value
-    base_ypred = [y_train.mean()] * len(y_test)
-    base_MSE = mean_squared_error(y_test, base_ypred)
-    base_R2 = r2_score(y_test, base_ypred)
-    print(f"Base Model Test >> MSE = {round(base_MSE, 4)}, R2 = {round(base_R2, 4)}")
+    base_ypred = [y_train.mean()] * len(y_train)
+    base_train_MSE = mean_squared_error(y_train, base_ypred)
+    base_train_R2 = r2_score(y_train, base_ypred)
+    print(f"Base Model Test >> MSE = {round(base_train_MSE, 4)}, R2 = {round(base_train_R2, 4)}")
 
+    base_ypred = [y_train.mean()] * len(y_test)
+    base_test_MSE = mean_squared_error(y_test, base_ypred)
+    base_test_R2 = r2_score(y_test, base_ypred)
+    print(f"Base Model Test >> MSE = {round(base_test_MSE, 4)}, R2 = {round(base_test_R2, 4)}")
+
+    # Prepare train and test data for plotting
     X_train2 = zip(*X_train)
     X_train2 = list(X_train2)
-
     X_test2 = zip(*X_test)
     X_test2 = list(X_test2)
 
-    # TODO not sure on this plot?
     # Plot predictions
     # 0 for income, 1 for besds, 2 for baths, 3 for area
     input = 1
@@ -210,6 +203,7 @@ def main(dataset):
     plt.ylabel("House Price")
     plt.show()
 
+# Prints evaluation of model
 def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
     y_pred_test = model.predict(X_test)
     y_pred_train = model.predict(X_train)
@@ -220,12 +214,11 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
     print(f"{model_type} Train >> MSE = {round(MSE_train, 4)}, R2 = {round(R2_train, 4)}")
     print(f"{model_type} Test  >> MSE = {round(MSE_test, 4)}, R2 = {round(R2_test, 4)}")
 
-
+# Normalises inputs to range 0 - 1
 def normalise(data_array: np.array) -> np.array:
     norm = np.linalg.norm(data_array)
     normalized_array = data_array/norm
     return normalized_array
-
 
 if __name__ == "__main__":
     main('ml-dataset.csv')
