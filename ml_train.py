@@ -20,6 +20,7 @@ K_VALUE = 8
 
 SHOW_CROSSVAL = True
 
+
 def main(dataset):
     # Read in the dataset
     df = pd.read_csv(dataset)
@@ -194,11 +195,16 @@ def main(dataset):
     input = 1
     plt.rc('font', size=18)
     plt.rcParams['figure.constrained_layout.use'] = True
-    plt.scatter(X_test2[input], y_test, color='green', marker='+', label="Test data")
-    plt.scatter(X_test2[input], linear_mod.predict(X_test), color='blue', marker='D', label="Linear Model")
-    plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
-    plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
-    plt.scatter(X_test2[input], kNN_model.predict(X_test), color='red', marker='x', label="KNN model")
+    plt.scatter(X_test2[input], y_test, color='green',
+                marker='+', label="Test data")
+    plt.scatter(X_test2[input], linear_mod.predict(X_test),
+                color='blue', marker='D', label="Linear Model")
+    plt.scatter(X_test2[input], lasso_model.predict(X_test),
+                color='yellow', marker='o', label="Lasso Model")
+    plt.scatter(X_test2[input], ridge_model.predict(X_test),
+                color='black', marker='*', label="Ridge Model")
+    plt.scatter(X_test2[input], kNN_model.predict(X_test),
+                color='red', marker='x', label="KNN model")
     plt.legend()
     plt.xlabel("Average Income")
     plt.ylabel("House Price")
@@ -209,9 +215,12 @@ def main(dataset):
     plt.rc('font', size=12)
     # Plot a prediction for linear regression
     # Area
-    plt.scatter(denormalise(area, area_min, area_max), y, color='b', marker='o', label="training data")
-    plt.scatter(denormalise(area, area_min, area_max), linear_mod.predict(X), color='r', marker='x', label="Linear Regression preds")
-    plt.scatter(denormalise(area, area_min, area_max), kNN_model.predict(X), color='g', marker='+', label="kNN preds")
+    plt.scatter(denormalise(area, area_min, area_max), y,
+                color='b', marker='o', label="training data")
+    plt.scatter(denormalise(area, area_min, area_max), linear_mod.predict(
+        X), color='r', marker='x', label="Linear Regression preds")
+    plt.scatter(denormalise(area, area_min, area_max), kNN_model.predict(
+        X), color='g', marker='+', label="kNN preds")
     plt.xlabel('Area of House (m^2)')
     plt.ylabel('House Price (€)')
     plt.legend()
@@ -221,8 +230,10 @@ def main(dataset):
 
     # Plot predictions for kNN
     # Income
-    plt.scatter(denormalise(income, income_min, income_max), y, color='b', marker='o', label="training data")
-    plt.scatter(denormalise(income, income_min, income_max), kNN_model.predict(X), color='g', marker='x', label="predictions")
+    plt.scatter(denormalise(income, income_min, income_max), y,
+                color='b', marker='o', label="training data")
+    plt.scatter(denormalise(income, income_min, income_max), kNN_model.predict(
+        X), color='g', marker='x', label="predictions")
     plt.xlabel('Median Income of Area (€)')
     plt.ylabel('House Price (€)')
     plt.legend()
@@ -230,8 +241,10 @@ def main(dataset):
     plt.show()
 
     # Area
-    plt.scatter(denormalise(area, area_min, area_max), y, color='b', marker='o', label="training data")
-    plt.scatter(denormalise(area, area_min, area_max), kNN_model.predict(X), color='r', marker='x', label="predictions")
+    plt.scatter(denormalise(area, area_min, area_max), y,
+                color='b', marker='o', label="training data")
+    plt.scatter(denormalise(area, area_min, area_max), kNN_model.predict(
+        X), color='r', marker='x', label="predictions")
     plt.xlabel('Area of House (m^2)')
     plt.ylabel('House Price (€)')
     plt.legend()
@@ -240,8 +253,10 @@ def main(dataset):
     plt.show()
 
     # Number of Beds
-    plt.scatter(denormalise(beds, beds_min, beds_max), y, color='b', marker='o', label="training data")
-    plt.scatter(denormalise(beds, beds_min, beds_max), kNN_model.predict(X), color='r', marker='x', label="predictions")
+    plt.scatter(denormalise(beds, beds_min, beds_max), y,
+                color='b', marker='o', label="training data")
+    plt.scatter(denormalise(beds, beds_min, beds_max), kNN_model.predict(
+        X), color='r', marker='x', label="predictions")
     plt.xlabel('Number of beds')
     plt.ylabel('House Price (€)')
     plt.legend()
@@ -250,15 +265,16 @@ def main(dataset):
     plt.show()
 
     # Number of Bathrooms
-    plt.scatter(denormalise(baths, baths_min, baths_max), y, color='b', marker='o', label="training data")
-    plt.scatter(denormalise(baths, baths_min, baths_max), kNN_model.predict(X), color='g', marker='x', label="predictions")
+    plt.scatter(denormalise(baths, baths_min, baths_max), y,
+                color='b', marker='o', label="training data")
+    plt.scatter(denormalise(baths, baths_min, baths_max), kNN_model.predict(
+        X), color='g', marker='x', label="predictions")
     plt.xlabel('Number of bathrooms')
     plt.ylabel('House Price (€)')
     plt.legend()
     plt.xlim(0, 16)
     plt.title(f"Number of Bathrooms Vs Price of House")
     plt.show()
-
 
 
 # Prints evaluation of model
@@ -281,6 +297,7 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
 # Normalises inputs to range 0 - 1
 def normalise(data_array: np.array, min, max) -> np.array:
     return (data_array - min) / (max - min)
+
 
 def denormalise(norm_array: np.array, min, max) -> np.array:
     return (norm_array * (max - min) + min)
