@@ -37,7 +37,7 @@ def main(dataset):
     area = area[mask]
     p_type = p_type[mask]
     y = y[mask]
-    
+
     # Normalise input features between 0 and 1
     income = normalise(income)
     beds = normalise(beds)
@@ -208,9 +208,6 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
 
 # Normalises inputs to range 0 - 1
 def normalise(data_array: np.array) -> np.array:
-    # norm = np.linalg.norm(data_array)
-    # normalized_array = data_array/norm
-    # return normalized_array
     return (data_array - np.min(data_array)) / (np.max(data_array) - np.min(data_array))
 
 # Removes listings that include land using a mask
