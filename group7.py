@@ -143,7 +143,6 @@ def main(dataset):
     linear_mod = linear_model.LinearRegression()
     linear_mod.fit(X_train, y_train)
     print_evaluation(linear_mod, "Linear Regression", X_train, X_test, y_train, y_test)
-    print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
 
     # Lasso Regression
     lasso_model = linear_model.Lasso(alpha=1/(2*LASSO_C_VALUE), max_iter=10000)
