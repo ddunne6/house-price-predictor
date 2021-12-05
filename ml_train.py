@@ -16,10 +16,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 # Hyperparameters
 LASSO_C_VALUE = 0.0001
 RIDGE_C_VALUE = 0.1
-
 K_VALUE = 8
-SHOW_CROSSVAL = False
 
+SHOW_CROSSVAL = True
 
 def main(dataset):
     # Read in the dataset
@@ -42,10 +41,14 @@ def main(dataset):
     y = y[mask]
 
     # Normalise input features between 0 and 1
-    income = normalise(income)
-    beds = normalise(beds)
-    baths = normalise(baths)
-    area = normalise(area)
+    income_min, income_max = np.min(income), np.max(income)
+    income = normalise(income, income_min, income_max)
+    beds_min, beds_max = np.min(beds), np.max(beds)
+    beds = normalise(beds, beds_min, beds_max)
+    baths_min, baths_max = np.min(baths), np.max(baths)
+    baths = normalise(baths, baths_min, baths_max)
+    area_min, area_max = np.min(area), np.max(area)
+    area = normalise(area, area_min, area_max)
 
     # Peform one-hot encoding on property types
     lab_enc = LabelEncoder()
@@ -63,6 +66,7 @@ def main(dataset):
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
 
+    plt.rc('font', size=18)
     # Cross-Validation
     # No cross-validation for linear model - no C value to tune
     if SHOW_CROSSVAL:
@@ -70,7 +74,7 @@ def main(dataset):
         mean_error = []
         std_error = []
         # C values to validate
-        CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
+        CL_range = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
         for Ci in CL_range:
             model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=100000)
             temp = []
@@ -121,7 +125,7 @@ def main(dataset):
         mean_error = []
         std_error = []
         # k values to validate
-        K_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        K_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         for Ki in K_range:
             model = KNeighborsRegressor(n_neighbors=Ki, weights='uniform')
             temp = []
@@ -138,7 +142,7 @@ def main(dataset):
         plt.errorbar(K_range, mean_error, yerr=std_error)
         plt.xlabel('Ki')
         plt.ylabel('MSE')
-        plt.xlim((0, 12))
+        plt.xlim((0, 10))
         plt.title('kNN - k Cross Validation')
         plt.show()
 
@@ -200,15 +204,62 @@ def main(dataset):
     plt.ylabel("House Price")
     plt.show()
 
-    # Plot predictions
-    plt.scatter(beds, y, color='r', marker='o', label="beds")
-    plt.scatter(baths, y, color='g', marker='x', label="baths")
-    plt.xlabel('Number of beds/baths')
+    plt.style.use('ggplot')
+    plt.rcParams['figure.constrained_layout.use'] = True
+    plt.rc('font', size=12)
+    # Plot a prediction for linear regression
+    # Area
+    plt.scatter(denormalise(area, area_min, area_max), y, color='b', marker='o', label="training data")
+    plt.scatter(denormalise(area, area_min, area_max), linear_mod.predict(X), color='r', marker='x', label="Linear Regression preds")
+    plt.scatter(denormalise(area, area_min, area_max), kNN_model.predict(X), color='g', marker='+', label="kNN preds")
+    plt.xlabel('Area of House (m^2)')
     plt.ylabel('House Price (€)')
     plt.legend()
-    #plt.xlim(0, 16)
-    plt.title(f"Number of Units Vs Price of House")
+    plt.xlim(0, 1000)
+    plt.title(f"Area of House Vs Price of House")
     plt.show()
+
+    # Plot predictions for kNN
+    # Income
+    plt.scatter(denormalise(income, income_min, income_max), y, color='b', marker='o', label="training data")
+    plt.scatter(denormalise(income, income_min, income_max), kNN_model.predict(X), color='g', marker='x', label="predictions")
+    plt.xlabel('Median Income of Area (€)')
+    plt.ylabel('House Price (€)')
+    plt.legend()
+    plt.title(f"Median Income of Area Vs Price of House (kNN)")
+    plt.show()
+
+    # Area
+    plt.scatter(denormalise(area, area_min, area_max), y, color='b', marker='o', label="training data")
+    plt.scatter(denormalise(area, area_min, area_max), kNN_model.predict(X), color='r', marker='x', label="predictions")
+    plt.xlabel('Area of House (m^2)')
+    plt.ylabel('House Price (€)')
+    plt.legend()
+    plt.xlim(0, 1000)
+    plt.title(f"Area of House Vs Price of House (kNN)")
+    plt.show()
+
+    # Number of Beds
+    plt.scatter(denormalise(beds, beds_min, beds_max), y, color='b', marker='o', label="training data")
+    plt.scatter(denormalise(beds, beds_min, beds_max), kNN_model.predict(X), color='r', marker='x', label="predictions")
+    plt.xlabel('Number of beds')
+    plt.ylabel('House Price (€)')
+    plt.legend()
+    plt.xlim(0, 16)
+    plt.title(f"Number of Beds Vs Price of House (kNN)")
+    plt.show()
+
+    # Number of Bathrooms
+    plt.scatter(denormalise(baths, baths_min, baths_max), y, color='b', marker='o', label="training data")
+    plt.scatter(denormalise(baths, baths_min, baths_max), kNN_model.predict(X), color='g', marker='x', label="predictions")
+    plt.xlabel('Number of bathrooms')
+    plt.ylabel('House Price (€)')
+    plt.legend()
+    plt.xlim(0, 16)
+    plt.title(f"Number of Bathrooms Vs Price of House")
+    plt.show()
+
+
 
 # Prints evaluation of model
 
@@ -228,8 +279,11 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
 
 
 # Normalises inputs to range 0 - 1
-def normalise(data_array: np.array) -> np.array:
-    return (data_array - np.min(data_array)) / (np.max(data_array) - np.min(data_array))
+def normalise(data_array: np.array, min, max) -> np.array:
+    return (data_array - min) / (max - min)
+
+def denormalise(norm_array: np.array, min, max) -> np.array:
+    return (norm_array * (max - min) + min)
 
 
 # Removes listings that include land using a mask
