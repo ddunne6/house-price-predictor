@@ -14,8 +14,8 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Hyperparameters
-LASSO_C_VALUE = 0.01
-RIDGE_C_VALUE = 100
+LASSO_C_VALUE = 0.0001
+RIDGE_C_VALUE = 0.1
 K_VALUE = 8
 
 def main(dataset):
@@ -28,7 +28,7 @@ def main(dataset):
     baths = df.iloc[:, 4].to_numpy()
     area = df.iloc[:, 5].to_numpy()
     p_type = df.iloc[:, 6].to_numpy()
-    
+
     # Remove listings over a certain size
     mask = area_mask(area, 1000)
     income = income[mask]
@@ -37,7 +37,7 @@ def main(dataset):
     area = area[mask]
     p_type = p_type[mask]
     y = y[mask]
-
+    
     # Normalise input features between 0 and 1
     income = normalise(income)
     beds = normalise(beds)
@@ -55,7 +55,7 @@ def main(dataset):
     X = np.vstack((income, beds, baths, area))
     X = np.transpose(X)
     X = np.hstack((X, type_enc))
-
+    
     # Split training and test data with 80:20 split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
@@ -169,7 +169,7 @@ def main(dataset):
     base_test_MSE = mean_squared_error(y_test, base_ypred)
     base_test_R2 = r2_score(y_test, base_ypred)
     print(f"Base Model Test >> MSE = {round(base_test_MSE, 4)}, R2 = {round(base_test_R2, 4)}")
-
+    
     # Prepare train and test data for plotting
     X_train2 = zip(*X_train)
     X_train2 = list(X_train2)
@@ -181,11 +181,11 @@ def main(dataset):
     input = 1
     plt.rc('font', size=18)
     plt.rcParams['figure.constrained_layout.use'] = True
-    plt.scatter(X_train2[input], y_train, color='green', marker='+', label="Training data")
-    plt.scatter(X_test2[input], linear_mod.predict(X_test), color='red', marker='x', label="Linear Model")
-    plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
-    plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
-    plt.scatter(X_test2[input], kNN_model.predict(X_test), color='blue', marker='D', label="KNN model")
+    plt.scatter(X_test2[input], y_test, color='green', marker='+', label="Test data")
+    # plt.scatter(X_test2[input], linear_mod.predict(X_test), color='blue', marker='D', label="Linear Model")
+    # plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
+    # plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
+    plt.scatter(X_test2[input], kNN_model.predict(X_test), color='red', marker='x', label="KNN model")
     plt.legend()
     plt.xlabel("Average Income")
     plt.ylabel("House Price")
@@ -208,9 +208,10 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
 
 # Normalises inputs to range 0 - 1
 def normalise(data_array: np.array) -> np.array:
-    norm = np.linalg.norm(data_array)
-    normalized_array = data_array/norm
-    return normalized_array
+    # norm = np.linalg.norm(data_array)
+    # normalized_array = data_array/norm
+    # return normalized_array
+    return (data_array - np.min(data_array)) / (np.max(data_array) - np.min(data_array))
 
 # Removes listings that include land using a mask
 def area_mask(area, max_area):
