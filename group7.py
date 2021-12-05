@@ -29,6 +29,7 @@ def main(dataset):
     area = df.iloc[:, 5].to_numpy()
     p_type = df.iloc[:, 6].to_numpy()
     
+    
     # Remove listings that include land using a mask
     yhat = np.empty(len(area), dtype=object)
     ylist = []
@@ -152,19 +153,19 @@ def main(dataset):
     linear_mod = linear_model.LinearRegression()
     linear_mod.fit(X_train, y_train)
     print_evaluation(linear_mod, "Linear Regression", X_train, X_test, y_train, y_test)
-    #print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
+    print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
 
     # Lasso Regression
     lasso_model = linear_model.Lasso(alpha=1/(2*LASSO_C_VALUE), max_iter=10000)
     lasso_model.fit(X_train, y_train)
     print_evaluation(lasso_model, "Lasso Regression", X_train, X_test, y_train, y_test)
-    #print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
+    print("Intercept: %f"%(lasso_model.intercept_), " Coefficients: " ,(lasso_model.coef_))
 
     # Ridge Regression
     ridge_model = linear_model.Ridge(alpha=1/(2*RIDGE_C_VALUE), max_iter=10000)
     ridge_model.fit(X_train, y_train)
     print_evaluation(ridge_model, "Ridge Regression", X_train, X_test, y_train, y_test)
-    #print("Intercept: %f"%(linear_mod.intercept_), " Coefficients: " ,(linear_mod.coef_))
+    print("Intercept: %f"%(ridge_model.intercept_), " Coefficients: " ,(ridge_model.coef_))
 
     # kNN Regression
     kNN_model = KNeighborsRegressor(n_neighbors=K_VALUE, weights='uniform')
