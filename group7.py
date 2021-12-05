@@ -29,18 +29,8 @@ def main(dataset):
     area = df.iloc[:, 5].to_numpy()
     p_type = df.iloc[:, 6].to_numpy()
     
-    
-    # Remove listings that include land using a mask
-    yhat = np.empty(len(area), dtype=object)
-    ylist = []
-    for i in range(len(area)):
-        if area[i] >= 1000 :
-            yhat[i] = -1
-            ylist.append(i)
-        else:
-            yhat[i] = 1
-    mask = yhat != -1
-
+    # Remove listings over a certain size
+    mask = area_mask(area, 1000)
     income = income[mask]
     beds = beds[mask]
     baths = baths[mask]
@@ -159,13 +149,11 @@ def main(dataset):
     lasso_model = linear_model.Lasso(alpha=1/(2*LASSO_C_VALUE), max_iter=10000)
     lasso_model.fit(X_train, y_train)
     print_evaluation(lasso_model, "Lasso Regression", X_train, X_test, y_train, y_test)
-    print("Intercept: %f"%(lasso_model.intercept_), " Coefficients: " ,(lasso_model.coef_))
 
     # Ridge Regression
     ridge_model = linear_model.Ridge(alpha=1/(2*RIDGE_C_VALUE), max_iter=10000)
     ridge_model.fit(X_train, y_train)
     print_evaluation(ridge_model, "Ridge Regression", X_train, X_test, y_train, y_test)
-    print("Intercept: %f"%(ridge_model.intercept_), " Coefficients: " ,(ridge_model.coef_))
 
     # kNN Regression
     kNN_model = KNeighborsRegressor(n_neighbors=K_VALUE, weights='uniform')
@@ -214,12 +202,28 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
     R2_test = r2_score(y_test, y_pred_test)
     print(f"{model_type} Train >> MSE = {round(MSE_train, 4)}, R2 = {round(R2_train, 4)}")
     print(f"{model_type} Test  >> MSE = {round(MSE_test, 4)}, R2 = {round(R2_test, 4)}")
+    if model_type != "KNN":
+        print(f"{model_type} Intercept = %f"%(model.intercept_))
+        print(f"{model_type} Coefficients = ",(model.coef_))
+
 
 # Normalises inputs to range 0 - 1
 def normalise(data_array: np.array) -> np.array:
     norm = np.linalg.norm(data_array)
     normalized_array = data_array/norm
     return normalized_array
+
+# Removes listings that include land using a mask
+def area_mask(area, max_area):
+    sizes = np.empty(len(area), dtype=object)
+    # -1 if too large, 1 if acceptable
+    for i in range(len(area)):
+        if area[i] >= max_area :
+            sizes[i] = -1
+        else:
+            sizes[i] = 1
+    mask = sizes != -1
+    return mask
 
 if __name__ == "__main__":
     main('ml-dataset.csv')
