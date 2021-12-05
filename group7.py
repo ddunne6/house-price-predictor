@@ -17,6 +17,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 LASSO_C_VALUE = 0.01
 RIDGE_C_VALUE = 100
 K_VALUE = 8
+SHOW_CROSSVAL = False
+
 
 def main(dataset):
     # Read in the dataset
@@ -28,7 +30,7 @@ def main(dataset):
     baths = df.iloc[:, 4].to_numpy()
     area = df.iloc[:, 5].to_numpy()
     p_type = df.iloc[:, 6].to_numpy()
-    
+
     # Remove listings over a certain size
     mask = area_mask(area, 1000)
     income = income[mask]
@@ -62,97 +64,101 @@ def main(dataset):
 
     # Cross-Validation
     # No cross-validation for linear model - no C value to tune
+    if SHOW_CROSSVAL:
+        # Lasso regression C cross-validation
+        mean_error = []
+        std_error = []
+        # C values to validate
+        CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
+        for Ci in CL_range:
+            model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=100000)
+            temp = []
+            kf = KFold(n_splits=5)
+            # Divide data into train and test
+            for train, test in kf.split(X):
+                model.fit(X[train], y[train])
+                ypred = model.predict(X[test])
+                # Calculate errors
+                temp.append(mean_squared_error(y[test], ypred))
+            mean_error.append(np.array(temp).mean())
+            std_error.append(np.array(temp).std())
+        # Plot MSE vs C value
+        plt.errorbar(CL_range, mean_error, yerr=std_error)
+        plt.xlabel('Ci')
+        plt.ylabel('MSE')
+        plt.title('Lasso Regression - C Cross Validation')
+        plt.xscale("log")
+        plt.show()
 
-    # Lasso regression C cross-validation
-    mean_error = []
-    std_error = []
-    # C values to validate
-    CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
-    for Ci in CL_range:
-        model = linear_model.Lasso(alpha=1/(2*Ci), max_iter=100000)
-        temp = []
-        kf = KFold(n_splits=5)
-        # Divide data into train and test
-        for train, test in kf.split(X):
-            model.fit(X[train], y[train])
-            ypred = model.predict(X[test])
+        # Ridge regression C cross-validation
+        mean_error = []
+        std_error = []
+        # C values to validate
+        CL_range = [0.00001, 0.0001, 0.001, 0.01,
+                    0.1, 1, 10, 100, 1000, 10000, 100000]
+        for Ci in CL_range:
+            model = linear_model.Ridge(alpha=1/(2*Ci), max_iter=10000)
+            temp = []
+            kf = KFold(n_splits=5)
+            # Divide data into train and test
+            for train, test in kf.split(X):
+                model.fit(X[train], y[train])
+                ypred = model.predict(X[test])
+                temp.append(mean_squared_error(y[test], ypred))
             # Calculate errors
-            temp.append(mean_squared_error(y[test], ypred))
-        mean_error.append(np.array(temp).mean())
-        std_error.append(np.array(temp).std())
-    # Plot MSE vs C value
-    plt.errorbar(CL_range, mean_error, yerr=std_error)
-    plt.xlabel('Ci')
-    plt.ylabel('MSE')
-    plt.title('Lasso Regression - C Cross Validation')
-    plt.xscale("log")
-    plt.show()
+            mean_error.append(np.array(temp).mean())
+            std_error.append(np.array(temp).std())
+        # Plot MSE vs C value
+        plt.errorbar(CL_range, mean_error, yerr=std_error)
+        plt.xlabel('Ci')
+        plt.ylabel('MSE')
+        plt.title('Ridge Regression - C Cross Validation')
+        plt.xscale("log")
+        plt.show()
 
-    # Ridge regression C cross-validation
-    mean_error = []
-    std_error = []
-    # C values to validate
-    CL_range = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]
-    for Ci in CL_range:
-        model = linear_model.Ridge(alpha=1/(2*Ci), max_iter=10000)
-        temp = []
-        kf = KFold(n_splits=5)
-        # Divide data into train and test
-        for train, test in kf.split(X):
-            model.fit(X[train], y[train])
-            ypred = model.predict(X[test])
-            temp.append(mean_squared_error(y[test], ypred))
-        # Calculate errors
-        mean_error.append(np.array(temp).mean())
-        std_error.append(np.array(temp).std())
-    # Plot MSE vs C value
-    plt.errorbar(CL_range, mean_error, yerr=std_error)
-    plt.xlabel('Ci')
-    plt.ylabel('MSE')
-    plt.title('Ridge Regression - C Cross Validation')
-    plt.xscale("log")
-    plt.show()
-
-    # kNN k cross-validation
-    mean_error = []
-    std_error = []
-    # k values to validate
-    K_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    for Ki in K_range:
-        model = KNeighborsRegressor(n_neighbors=Ki, weights='uniform')
-        temp = []
-        kf = KFold(n_splits=5)
-        # Divide data into train and test
-        for train, test in kf.split(X):
-            model.fit(X[train], y[train])
-            ypred = model.predict(X[test])
-            temp.append(mean_squared_error(y[test], ypred))
-        # Calculate errors
-        mean_error.append(np.array(temp).mean())
-        std_error.append(np.array(temp).std())
-    # Plot MSE vs k value
-    plt.errorbar(K_range, mean_error, yerr=std_error)
-    plt.xlabel('Ki')
-    plt.ylabel('MSE')
-    plt.xlim((0, 10))
-    plt.title('kNN - k Cross Validation')
-    plt.show()
+        # kNN k cross-validation
+        mean_error = []
+        std_error = []
+        # k values to validate
+        K_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        for Ki in K_range:
+            model = KNeighborsRegressor(n_neighbors=Ki, weights='uniform')
+            temp = []
+            kf = KFold(n_splits=5)
+            # Divide data into train and test
+            for train, test in kf.split(X):
+                model.fit(X[train], y[train])
+                ypred = model.predict(X[test])
+                temp.append(mean_squared_error(y[test], ypred))
+            # Calculate errors
+            mean_error.append(np.array(temp).mean())
+            std_error.append(np.array(temp).std())
+        # Plot MSE vs k value
+        plt.errorbar(K_range, mean_error, yerr=std_error)
+        plt.xlabel('Ki')
+        plt.ylabel('MSE')
+        plt.xlim((0, 12))
+        plt.title('kNN - k Cross Validation')
+        plt.show()
 
     # Create Models
     # Linear Regression
     linear_mod = linear_model.LinearRegression()
     linear_mod.fit(X_train, y_train)
-    print_evaluation(linear_mod, "Linear Regression", X_train, X_test, y_train, y_test)
+    print_evaluation(linear_mod, "Linear Regression",
+                     X_train, X_test, y_train, y_test)
 
     # Lasso Regression
     lasso_model = linear_model.Lasso(alpha=1/(2*LASSO_C_VALUE), max_iter=10000)
     lasso_model.fit(X_train, y_train)
-    print_evaluation(lasso_model, "Lasso Regression", X_train, X_test, y_train, y_test)
+    print_evaluation(lasso_model, "Lasso Regression",
+                     X_train, X_test, y_train, y_test)
 
     # Ridge Regression
     ridge_model = linear_model.Ridge(alpha=1/(2*RIDGE_C_VALUE), max_iter=10000)
     ridge_model.fit(X_train, y_train)
-    print_evaluation(ridge_model, "Ridge Regression", X_train, X_test, y_train, y_test)
+    print_evaluation(ridge_model, "Ridge Regression",
+                     X_train, X_test, y_train, y_test)
 
     # kNN Regression
     kNN_model = KNeighborsRegressor(n_neighbors=K_VALUE, weights='uniform')
@@ -163,12 +169,14 @@ def main(dataset):
     base_ypred = [y_train.mean()] * len(y_train)
     base_train_MSE = mean_squared_error(y_train, base_ypred)
     base_train_R2 = r2_score(y_train, base_ypred)
-    print(f"Base Model Training >> MSE = {round(base_train_MSE, 4)}, R2 = {round(base_train_R2, 4)}")
+    print(
+        f"Base Model Training >> MSE = {round(base_train_MSE, 4)}, R2 = {round(base_train_R2, 4)}")
 
     base_ypred = [y_train.mean()] * len(y_test)
     base_test_MSE = mean_squared_error(y_test, base_ypred)
     base_test_R2 = r2_score(y_test, base_ypred)
-    print(f"Base Model Test >> MSE = {round(base_test_MSE, 4)}, R2 = {round(base_test_R2, 4)}")
+    print(
+        f"Base Model Test >> MSE = {round(base_test_MSE, 4)}, R2 = {round(base_test_R2, 4)}")
 
     # Prepare train and test data for plotting
     X_train2 = zip(*X_train)
@@ -181,17 +189,34 @@ def main(dataset):
     input = 1
     plt.rc('font', size=18)
     plt.rcParams['figure.constrained_layout.use'] = True
-    plt.scatter(X_train2[input], y_train, color='green', marker='+', label="Training data")
-    plt.scatter(X_test2[input], linear_mod.predict(X_test), color='red', marker='x', label="Linear Model")
-    plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
-    plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
-    plt.scatter(X_test2[input], kNN_model.predict(X_test), color='blue', marker='D', label="KNN model")
+    plt.scatter(X_train2[input], y_train, color='green',
+                marker='+', label="Training data")
+    plt.scatter(X_test2[input], linear_mod.predict(X_test),
+                color='red', marker='x', label="Linear Model")
+    plt.scatter(X_test2[input], lasso_model.predict(X_test),
+                color='yellow', marker='o', label="Lasso Model")
+    plt.scatter(X_test2[input], ridge_model.predict(X_test),
+                color='black', marker='*', label="Ridge Model")
+    plt.scatter(X_test2[input], kNN_model.predict(X_test),
+                color='blue', marker='D', label="KNN model")
     plt.legend()
     plt.xlabel("Average Income")
     plt.ylabel("House Price")
     plt.show()
 
+    # Plot predictions
+    plt.scatter(beds, y, color='r', marker='o', label="beds")
+    plt.scatter(baths, y, color='g', marker='x', label="baths")
+    plt.xlabel('Number of beds/baths')
+    plt.ylabel('House Price (€)')
+    plt.legend()
+    #plt.xlim(0, 16)
+    plt.title(f"Number of Units Vs Price of House")
+    plt.show()
+
 # Prints evaluation of model
+
+
 def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
     y_pred_test = model.predict(X_test)
     y_pred_train = model.predict(X_train)
@@ -202,8 +227,8 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
     print(f"{model_type} Train >> MSE = {round(MSE_train, 4)}, R2 = {round(R2_train, 4)}")
     print(f"{model_type} Test  >> MSE = {round(MSE_test, 4)}, R2 = {round(R2_test, 4)}")
     if model_type != "KNN":
-        print(f"{model_type} Intercept = %f"%(model.intercept_))
-        print(f"{model_type} Coefficients = ",(model.coef_))
+        print(f"{model_type} Intercept = %f" % (model.intercept_))
+        print(f"{model_type} Coefficients = ", (model.coef_))
 
 
 # Normalises inputs to range 0 - 1
@@ -213,16 +238,19 @@ def normalise(data_array: np.array) -> np.array:
     return normalized_array
 
 # Removes listings that include land using a mask
+
+
 def area_mask(area, max_area):
     sizes = np.empty(len(area), dtype=object)
     # -1 if too large, 1 if acceptable
     for i in range(len(area)):
-        if area[i] >= max_area :
+        if area[i] >= max_area:
             sizes[i] = -1
         else:
             sizes[i] = 1
     mask = sizes != -1
     return mask
+
 
 if __name__ == "__main__":
     main('ml-dataset.csv')
