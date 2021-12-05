@@ -175,7 +175,7 @@ def main(dataset):
     base_ypred = [y_train.mean()] * len(y_train)
     base_train_MSE = mean_squared_error(y_train, base_ypred)
     base_train_R2 = r2_score(y_train, base_ypred)
-    print(f"Base Model Test >> MSE = {round(base_train_MSE, 4)}, R2 = {round(base_train_R2, 4)}")
+    print(f"Base Model Training >> MSE = {round(base_train_MSE, 4)}, R2 = {round(base_train_R2, 4)}")
 
     base_ypred = [y_train.mean()] * len(y_test)
     base_test_MSE = mean_squared_error(y_test, base_ypred)
