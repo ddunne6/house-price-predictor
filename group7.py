@@ -182,9 +182,9 @@ def main(dataset):
     plt.rc('font', size=18)
     plt.rcParams['figure.constrained_layout.use'] = True
     plt.scatter(X_test2[input], y_test, color='green', marker='+', label="Test data")
-    # plt.scatter(X_test2[input], linear_mod.predict(X_test), color='blue', marker='D', label="Linear Model")
-    # plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
-    # plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
+    plt.scatter(X_test2[input], linear_mod.predict(X_test), color='blue', marker='D', label="Linear Model")
+    plt.scatter(X_test2[input], lasso_model.predict(X_test), color='yellow', marker='o', label="Lasso Model")
+    plt.scatter(X_test2[input], ridge_model.predict(X_test), color='black', marker='*', label="Ridge Model")
     plt.scatter(X_test2[input], kNN_model.predict(X_test), color='red', marker='x', label="KNN model")
     plt.legend()
     plt.xlabel("Average Income")
