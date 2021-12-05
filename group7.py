@@ -16,6 +16,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 # Hyperparameters
 LASSO_C_VALUE = 0.0001
 RIDGE_C_VALUE = 0.1
+
 K_VALUE = 8
 
 def main(dataset):
@@ -55,7 +56,7 @@ def main(dataset):
     X = np.vstack((income, beds, baths, area))
     X = np.transpose(X)
     X = np.hstack((X, type_enc))
-    
+
     # Split training and test data with 80:20 split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
@@ -169,7 +170,7 @@ def main(dataset):
     base_test_MSE = mean_squared_error(y_test, base_ypred)
     base_test_R2 = r2_score(y_test, base_ypred)
     print(f"Base Model Test >> MSE = {round(base_test_MSE, 4)}, R2 = {round(base_test_R2, 4)}")
-    
+
     # Prepare train and test data for plotting
     X_train2 = zip(*X_train)
     X_train2 = list(X_train2)
@@ -209,6 +210,7 @@ def print_evaluation(model, model_type, X_train, X_test, y_train, y_test):
 # Normalises inputs to range 0 - 1
 def normalise(data_array: np.array) -> np.array:
     return (data_array - np.min(data_array)) / (np.max(data_array) - np.min(data_array))
+
 
 # Removes listings that include land using a mask
 def area_mask(area, max_area):
