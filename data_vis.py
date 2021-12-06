@@ -25,7 +25,7 @@ def main(dataset):
     plt.xlabel('Area of House (m^2)')
     plt.ylabel('House Price (€)')
     plt.legend()
-    plt.xlim(0, 2000)
+    plt.xlim(0, 1000)
     plt.title(f"Area of House Vs Price of House")
     plt.show()
 

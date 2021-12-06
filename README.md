@@ -5,5 +5,5 @@
 Run machine learning algorithms
 
 ```
-python group7.py
+python ml_train.py
 ```
