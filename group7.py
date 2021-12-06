@@ -1,6 +1,6 @@
 # Group 7 Machine Learning Project
 # David Dunne - 17329756
-# Eoin Lynch -
+# Eoin Lynch - 17329728
 # Charlie Maguire - 17332641
 
 # Imports
